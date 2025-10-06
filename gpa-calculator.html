@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<link rel="icon" href="logo.png" type="image/png">
+<title>GWUIM | GPA Calculator</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root{
+    --bg:#0f172a;
+    --card:#1e293b;
+    --accent:#00d4ff;
+    --muted:#808080;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: "Segoe UI", Roboto, Arial, sans-serif;
+    background:var(--bg);
+    color:white;
+  }
+
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    padding:10px 16px;
+  }
+  header img.logo{height:64px; width:auto; display:block}
+  header h1{
+    margin:0;
+    color:var(--accent);
+    font-size:1.4rem;
+    text-align:center;
+  }
+
+  .page { padding: 8px 16px 80px; }
+
+  .grid{
+    display:flex;
+    flex-wrap:wrap;
+    gap:20px;
+    justify-content:center;
+    align-items:flex-start;
+  }
+
+  .semester{
+    background:var(--card);
+    border-radius:10px;
+    padding:12px;
+    flex:1 1 45%;
+    min-width:280px;
+    max-width:540px;
+  }
+
+  .semester h2{
+    margin:0 0 8px 0;
+    color:var(--accent);
+    font-size:1.05rem;
+    text-align:center;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:6px;
+  }
+  th, td{
+    padding:8px 6px;
+    text-align:center;
+    font-size:0.95rem;
+  }
+  thead th{
+    background:#334155;
+    font-weight:600;
+    color:#fff;
+  }
+  tbody td{
+    background:var(--card);
+  }
+
+  /* --- FIXED DROPDOWN STYLE --- */
+  select{
+    padding:6px 8px;
+    border-radius:6px;
+    border:1px solid rgba(255,255,255,0.2);
+    background-color:#334155;
+    color:white;
+    min-width:80px;
+    appearance:none;
+    cursor:pointer;
+  }
+  select:focus{
+    outline:2px solid var(--accent);
+  }
+  option{
+    background-color:#1e293b;
+    color:white;
+  }
+
+  .sem-result{
+    margin-top:10px;
+    text-align:center;
+    font-weight:700;
+  }
+
+  .overall {
+    margin:24px auto 16px;
+    text-align:center;
+    font-size:1.2rem;
+    font-weight:700;
+    color:var(--accent);
+  }
+
+  footer{
+    width:100%;
+    text-align:center;
+    margin-top:28px;
+    padding:10px 6px;
+    font-size:0.9rem;
+    color:var(--muted);
+    position:sticky;
+    bottom:0;
+    background:var(--bg);
+  }
+
+  @media (max-width:900px){
+    .semester{flex:1 1 100%}
+  }
+
+  .note{font-size:0.9rem;color:var(--muted);text-align:center;margin-top:6px}
+</style>
+</head>
+<body>
+<header>
+  <img class="logo" src="logo.png" alt="GWUIM logo">
+  <h1>GWUIM | GPA Calculator</h1>
+</header>
+
+<main class="page">
+  <div class="grid" id="grid"></div>
+  <div class="overall" id="overallGPA">🎯 Overall GPA: 0.00</div>
+  <div class="note">Credits are fixed at 3 per subject — change grades to update GPAs instantly.</div>
+</main>
+
+<footer>
+  © 2025 Gampaha Wickramarachchi University of Indigenous Medicine | Designed by Hansana Hiransha
+</footer>
+
+<script>
+const SEMESTERS = {
+  "Semester 1": ["ICT","Maths","Science","English","Sinhala","History"],
+  "Semester 2": ["ICT","Maths","Physics","English","History"],
+  "Semester 3": ["Programming","Database","Networking","English","Statistics"],
+  "Semester 4": ["OOP","Web Development","AI Basics","Economics","Maths"],
+  "Semester 5": ["Software Eng.","Cybersecurity","Data Science","English","Physics"],
+  "Semester 6": ["Cloud Computing","IoT","AI Advanced","Maths","ICT"],
+  "Semester 7": ["Machine Learning","Big Data","Mobile Dev","Project","Statistics"],
+  "Semester 8": ["Internship","Final Project","Research","ICT","Entrepreneurship"]
+};
+
+const GRADES = ["A+","A","A-","B+","B","B-","C+","C","C-","D+","D","E"];
+const GRADE_POINTS = {
+  "A+":4.0,"A":4.0,"A-":3.7,
+  "B+":3.3,"B":3.0,"B-":2.7,
+  "C+":2.3,"C":2.0,"C-":1.7,
+  "D+":1.3,"D":1.0,"E":0.0
+};
+const DEFAULT_CREDIT = 3;
+
+function getGPAColor(gpa){
+  if(gpa >= 3.7) return "#00ff88";
+  if(gpa >= 3.0) return "#00d4ff";
+  if(gpa >= 2.0) return "#ffcc00";
+  return "#ff4d4d";
+}
+
+const grid = document.getElementById('grid');
+
+for(const [semName, subjects] of Object.entries(SEMESTERS)){
+  const semCard = document.createElement('section');
+  semCard.className = 'semester';
+  semCard.dataset.semester = semName;
+
+  const h = document.createElement('h2');
+  h.textContent = semName;
+  semCard.appendChild(h);
+
+  const table = document.createElement('table');
+  const thead = document.createElement('thead');
+  const headRow = document.createElement('tr');
+  ['Subject','Grade','Credits'].forEach(c=>{
+    const th = document.createElement('th'); th.textContent = c; headRow.appendChild(th);
+  });
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+
+  subjects.forEach(sub=>{
+    const tr = document.createElement('tr');
+    const tdSub = document.createElement('td'); tdSub.textContent = sub;
+    const tdGrade = document.createElement('td');
+    const sel = document.createElement('select');
+    sel.className = 'grade-select';
+    GRADES.forEach(g=>{
+      const op = document.createElement('option'); op.value = g; op.text = g; sel.appendChild(op);
+    });
+    sel.value = "A";
+    tdGrade.appendChild(sel);
+    const tdCred = document.createElement('td'); tdCred.textContent = DEFAULT_CREDIT;
+    tr.appendChild(tdSub); tr.appendChild(tdGrade); tr.appendChild(tdCred);
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+  semCard.appendChild(table);
+
+  const semResult = document.createElement('div');
+  semResult.className = 'sem-result';
+  semResult.setAttribute('data-sem-name', semName);
+  semResult.textContent = `${semName} GPA: 0.00`;
+  semCard.appendChild(semResult);
+
+  grid.appendChild(semCard);
+}
+
+function calculateAll(){
+  let totalPoints = 0, totalCredits = 0;
+  document.querySelectorAll('.semester').forEach(sem=>{
+    const rows = sem.querySelectorAll('tbody tr');
+    let semPoints = 0, semCredits = 0;
+    rows.forEach(row=>{
+      const sel = row.querySelector('select.grade-select');
+      const grade = sel.value;
+      const gp = GRADE_POINTS[grade] ?? 0;
+      semPoints += gp * DEFAULT_CREDIT;
+      semCredits += DEFAULT_CREDIT;
+    });
+    const semGPA = semCredits ? (semPoints/semCredits) : 0;
+    const semResultDiv = sem.querySelector('[data-sem-name]');
+    semResultDiv.textContent = `${sem.dataset.semester} GPA: ${semGPA.toFixed(2)}`;
+    semResultDiv.style.color = getGPAColor(semGPA);
+    totalPoints += semPoints;
+    totalCredits += semCredits;
+  });
+  const overall = totalCredits ? (totalPoints/totalCredits) : 0;
+  const overallDiv = document.getElementById('overallGPA');
+  overallDiv.textContent = `🎯 Overall GPA: ${overall.toFixed(2)}`;
+  overallDiv.style.color = getGPAColor(overall);
+}
+
+grid.addEventListener('change', e=>{
+  if(e.target.classList.contains('grade-select')) calculateAll();
+});
+
+calculateAll();
+</script>
+</body>
+</html>
